@@ -74,6 +74,8 @@ const char *get_dev_name(const struct nlattr *nest);
 int get_dev_info(const struct nlattr *nest, int *ifindex, char *ifname);
 u32 get_stats_flag(struct nl_context *nlctx, unsigned int nlcmd,
 		   unsigned int hdrattr);
+u32 get_legacy_flag(struct nl_context *nlctx, unsigned int nlcmd,
+		    unsigned int hdrattr);
 
 int linkmodes_reply_cb(const struct nlmsghdr *nlhdr, void *data);
 int linkinfo_reply_cb(const struct nlmsghdr *nlhdr, void *data);

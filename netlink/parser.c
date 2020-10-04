@@ -996,6 +996,7 @@ int nl_parser(struct nl_context *nlctx, const struct param_parser *params,
 	for (parser = params; parser->arg; parser++) {
 		struct nl_msg_buff *msgbuff;
 		struct nlattr *nest;
+		u32 flags;
 
 		n_params++;
 		if (group_style == PARSER_GROUP_NONE || !parser->group)
@@ -1018,9 +1019,11 @@ int nl_parser(struct nl_context *nlctx, const struct param_parser *params,
 				goto out_free_buffs;
 			break;
 		case PARSER_GROUP_MSG:
+			flags = get_legacy_flag(nlctx, parser->group,
+						ETHTOOL_A_LINKINFO_HEADER);
 			if (ethnla_fill_header(msgbuff,
 					       ETHTOOL_A_LINKINFO_HEADER,
-					       nlctx->devname, 0))
+					       nlctx->devname, flags))
 				goto out_free_buffs;
 			break;
 		default:

@@ -289,6 +289,19 @@ u32 get_stats_flag(struct nl_context *nlctx, unsigned int nlcmd,
 	return nlctx->ops_info[nlcmd].hdr_flags & ETHTOOL_FLAG_STATS;
 }
 
+u32 get_legacy_flag(struct nl_context *nlctx, unsigned int nlcmd,
+		    unsigned int hdrattr)
+{
+	if (nlcmd > ETHTOOL_MSG_USER_MAX ||
+	    !(nlctx->ops_info[nlcmd].op_flags & GENL_CMD_CAP_HASPOL))
+		return 0;
+
+	if (read_flags_policy(nlctx, nlctx->ethnl_socket, nlcmd, hdrattr) < 0)
+		return 0;
+
+	return nlctx->ops_info[nlcmd].hdr_flags & ETHTOOL_FLAG_LEGACY;
+}
+
 /* initialization */
 
 static int genl_read_ops(struct nl_context *nlctx,
