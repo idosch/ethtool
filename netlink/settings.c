@@ -1110,6 +1110,171 @@ static const struct param_parser sset_params[] = {
 	{}
 };
 
+static bool sset_is_autoneg_only(const struct nl_context *nlctx)
+{
+	return nlctx->argc == 2 && !strcmp(nlctx->argp[0], "autoneg") &&
+	       !strcmp(nlctx->argp[1], "on");
+}
+
+static int linkmodes_put_advert_all(struct nl_msg_buff *msgbuff,
+				    const struct nlattr *bits)
+{
+	struct nlattr *bitset_bits;
+	struct nlattr *bitset_bit;
+	const struct nlattr *bit;
+	int ret;
+
+	bitset_bits = ethnla_nest_start(msgbuff, ETHTOOL_A_BITSET_BITS);
+	if (!bitset_bits)
+		return -EMSGSIZE;
+
+	mnl_attr_for_each_nested(bit, bits) {
+		const struct nlattr *tb[ETHTOOL_A_BITSET_BIT_MAX + 1] = {};
+		DECLARE_ATTR_TB_INFO(tb);
+		unsigned int idx;
+
+		if (mnl_attr_get_type(bit) != ETHTOOL_A_BITSET_BITS_BIT)
+			continue;
+
+		ret = mnl_attr_parse_nested(bit, attr_cb, &tb_info);
+		if (ret < 0)
+			goto err_cancel_bitset_bits;
+
+		if (!tb[ETHTOOL_A_BITSET_BIT_INDEX]) {
+			ret = -EINVAL;
+			goto err_cancel_bitset_bits;
+		}
+		idx = mnl_attr_get_u32(tb[ETHTOOL_A_BITSET_BIT_INDEX]);
+
+		bitset_bit = ethnla_nest_start(msgbuff,
+					       ETHTOOL_A_BITSET_BITS_BIT);
+		if (!bitset_bit) {
+			ret = -EMSGSIZE;
+			goto err_cancel_bitset_bits;
+		}
+
+		if (ethnla_put_u32(msgbuff, ETHTOOL_A_BITSET_BIT_INDEX, idx)) {
+			ret = -EMSGSIZE;
+			goto err_cancel_bitset_bit;
+		}
+
+		/* Only advertise a link mode if it is both supported and a
+		 * "real" one.
+		 */
+		if (lm_class_match(idx, LM_CLASS_REAL) &&
+		    ethnla_put_flag(msgbuff, ETHTOOL_A_BITSET_BIT_VALUE, true)) {
+			ret = -EMSGSIZE;
+			goto err_cancel_bitset_bit;
+		}
+
+		ethnla_nest_end(msgbuff, bitset_bit);
+	}
+
+	ethnla_nest_end(msgbuff, bitset_bits);
+
+	return 0;
+
+err_cancel_bitset_bit:
+	ethnla_nest_cancel(msgbuff, bitset_bit);
+err_cancel_bitset_bits:
+	ethnla_nest_cancel(msgbuff, bitset_bits);
+	return ret;
+}
+
+static int linkmodes_reply_advert_all_cb(const struct nlmsghdr *nlhdr,
+					 void *data)
+{
+	const struct nlattr *bitset_tb[ETHTOOL_A_BITSET_MAX + 1] = {};
+	const struct nlattr *tb[ETHTOOL_A_LINKMODES_MAX + 1] = {};
+	DECLARE_ATTR_TB_INFO(bitset_tb);
+	struct nl_context *nlctx = data;
+	struct nl_msg_buff *msgbuff;
+	DECLARE_ATTR_TB_INFO(tb);
+	struct nl_socket *nlsk;
+	struct nlattr *ours;
+	int ret;
+
+	ret = mnl_attr_parse(nlhdr, GENL_HDRLEN, attr_cb, &tb_info);
+	if (ret < 0)
+		return ret;
+	if (!tb[ETHTOOL_A_LINKMODES_OURS])
+		return -EINVAL;
+
+	ret = mnl_attr_parse_nested(tb[ETHTOOL_A_LINKMODES_OURS], attr_cb,
+				    &bitset_tb_info);
+	if (ret < 0)
+		return ret;
+	if (!bitset_tb[ETHTOOL_A_BITSET_SIZE] ||
+	    !bitset_tb[ETHTOOL_A_BITSET_BITS])
+		return -EINVAL;
+
+	ret = netlink_init_ethnl2_socket(nlctx);
+	if (ret < 0)
+		return ret;
+
+	nlsk = nlctx->ethnl2_socket;
+	msgbuff = &nlsk->msgbuff;
+
+	ret = msg_init(nlctx, msgbuff, ETHTOOL_MSG_LINKMODES_SET,
+		       NLM_F_REQUEST | NLM_F_ACK);
+	if (ret < 0)
+		return ret;
+	if (ethnla_fill_header(msgbuff, ETHTOOL_A_LINKMODES_HEADER,
+			       nlctx->devname, 0))
+		return -EMSGSIZE;
+
+	if (ethnla_put_u8(msgbuff, ETHTOOL_A_LINKMODES_AUTONEG, AUTONEG_ENABLE))
+		return -EMSGSIZE;
+
+	ours = ethnla_nest_start(msgbuff, ETHTOOL_A_LINKMODES_OURS);
+	if (!ours)
+		return -EMSGSIZE;
+
+	if (ethnla_put_u32(msgbuff, ETHTOOL_A_BITSET_SIZE,
+			   mnl_attr_get_u32(bitset_tb[ETHTOOL_A_BITSET_SIZE]))) {
+		ret = -EMSGSIZE;
+		goto err_cancel_ours;
+	}
+
+	if (linkmodes_put_advert_all(msgbuff,
+				     bitset_tb[ETHTOOL_A_BITSET_BITS])) {
+		ret = -EMSGSIZE;
+		goto err_cancel_ours;
+	}
+
+	ethnla_nest_end(msgbuff, ours);
+
+	ret = nlsock_sendmsg(nlsk, NULL);
+	if (ret < 0)
+		return ret;
+	ret = nlsock_process_reply(nlsk, nomsg_reply_cb, nlctx);
+	if (ret < 0)
+		return ret;
+
+	return MNL_CB_OK;
+
+err_cancel_ours:
+	ethnla_nest_cancel(msgbuff, ours);
+	return ret;
+}
+
+static int sset_advert_all(struct nl_context *nlctx)
+{
+	struct nl_socket *nlsk = nlctx->ethnl_socket;
+	int ret;
+
+	if (netlink_cmd_check(nlctx->ctx, ETHTOOL_MSG_LINKMODES_GET, false) ||
+	    netlink_cmd_check(nlctx->ctx, ETHTOOL_MSG_LINKMODES_SET, false))
+		return -EOPNOTSUPP;
+
+	ret = gset_request(nlsk, ETHTOOL_MSG_LINKMODES_GET,
+			   ETHTOOL_A_LINKMODES_HEADER,
+			   linkmodes_reply_advert_all_cb);
+	if (ret < 0)
+		return ret;
+	return 0;
+}
+
 int nl_sset(struct cmd_context *ctx)
 {
 	struct nl_context *nlctx = ctx->nlctx;
@@ -1119,6 +1284,14 @@ int nl_sset(struct cmd_context *ctx)
 	nlctx->argp = ctx->argp;
 	nlctx->argc = ctx->argc;
 	nlctx->devname = ctx->devname;
+
+	/* For compatibility reasons with ioctl-based ethtool, when "autoneg
+	 * on" is specified without "advertise", "speed" and "duplex", we need
+	 * to query the supported link modes from the kernel and advertise all
+	 * the "real" ones.
+	 */
+	if (sset_is_autoneg_only(nlctx))
+		return sset_advert_all(nlctx);
 
 	ret = nl_parser(nlctx, sset_params, NULL, PARSER_GROUP_MSG);
 	if (ret < 0)
