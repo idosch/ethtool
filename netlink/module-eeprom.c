@@ -1,7 +1,7 @@
 /*
- * module-eeprom.c - netlink implementation of module eeprom get command
+ * module-eeprom.c - netlink implementation of module eeprom commands
  *
- * ethtool -m <dev>
+ * Implementation of "ethtool -m <dev>" and "ethtool -M <dev> ..."
  */
 
 #include <errno.h>
@@ -17,6 +17,8 @@
 #include "../list.h"
 #include "netlink.h"
 #include "parser.h"
+
+/* MODULE_EEPROM_GET */
 
 #define ETH_I2C_ADDRESS_LOW	0x50
 #define ETH_I2C_ADDRESS_HIGH	0x51
@@ -340,6 +342,43 @@ static void decoder_print(void)
 	}
 }
 
+int module_eeprom_ntf_cb(const struct nlmsghdr *nlhdr, void *data)
+{
+	const struct nlattr *tb[ETHTOOL_A_MODULE_EEPROM_MAX + 1] = {};
+	DECLARE_ATTR_TB_INFO(tb);
+	struct nl_context *nlctx = data;
+	bool silent;
+	int err_ret;
+	int ret;
+
+	silent = nlctx->is_dump || nlctx->is_monitor;
+	err_ret = silent ? MNL_CB_OK : MNL_CB_ERROR;
+	ret = mnl_attr_parse(nlhdr, GENL_HDRLEN, attr_cb, &tb_info);
+	if (ret < 0)
+		return err_ret;
+	if (!tb[ETHTOOL_A_MODULE_EEPROM_OFFSET] ||
+	    !tb[ETHTOOL_A_MODULE_EEPROM_LENGTH] ||
+	    !tb[ETHTOOL_A_MODULE_EEPROM_PAGE] ||
+	    !tb[ETHTOOL_A_MODULE_EEPROM_BANK] ||
+	    !tb[ETHTOOL_A_MODULE_EEPROM_I2C_ADDRESS])
+		return err_ret;
+	nlctx->devname = get_dev_name(tb[ETHTOOL_A_FEC_HEADER]);
+	if (!dev_ok(nlctx))
+		return err_ret;
+
+	if (silent)
+		putchar('\n');
+	printf("Module EEPROM write for %s:\n", nlctx->devname);
+	show_u32(tb[ETHTOOL_A_MODULE_EEPROM_OFFSET], "offset: ");
+	show_u32(tb[ETHTOOL_A_MODULE_EEPROM_LENGTH], "length: ");
+	printf("page: %u\n", mnl_attr_get_u8(tb[ETHTOOL_A_MODULE_EEPROM_PAGE]));
+	printf("bank: %u\n", mnl_attr_get_u8(tb[ETHTOOL_A_MODULE_EEPROM_BANK]));
+	printf("i2c address: 0x%x\n",
+	       mnl_attr_get_u8(tb[ETHTOOL_A_MODULE_EEPROM_I2C_ADDRESS]));
+
+	return MNL_CB_OK;
+}
+
 int nl_getmodule(struct cmd_context *ctx)
 {
 	struct ethtool_module_eeprom request = {0};
@@ -413,4 +452,86 @@ int nl_getmodule(struct cmd_context *ctx)
 cleanup:
 	cache_free();
 	return ret;
+}
+
+/* MODULE_EEPROM_SET */
+
+static const struct param_parser setmodule_params[] = {
+	{
+		.arg		= "offset",
+		.type		= ETHTOOL_A_MODULE_EEPROM_OFFSET,
+		.handler	= nl_parse_direct_u32,
+		.min_argc	= 1,
+	},
+	{
+		.arg		= "page",
+		.type		= ETHTOOL_A_MODULE_EEPROM_PAGE,
+		.handler	= nl_parse_direct_u8,
+		.min_argc	= 1,
+	},
+	{
+		.arg		= "bank",
+		.type		= ETHTOOL_A_MODULE_EEPROM_BANK,
+		.handler	= nl_parse_direct_u8,
+		.min_argc	= 1,
+	},
+	{
+		.arg		= "i2c",
+		.type		= ETHTOOL_A_MODULE_EEPROM_I2C_ADDRESS,
+		.handler	= nl_parse_direct_u8,
+		.min_argc	= 1,
+	},
+	{
+		.arg		= "value",
+		.type		= ETHTOOL_A_MODULE_EEPROM_DATA,
+		.handler	= nl_parse_direct_u8,
+		.min_argc	= 1,
+	},
+	{}
+};
+
+int nl_setmodule(struct cmd_context *ctx)
+{
+	struct nl_context *nlctx = ctx->nlctx;
+	struct nl_msg_buff *msgbuff;
+	struct nl_socket *nlsk;
+	int ret;
+
+	if (netlink_cmd_check(ctx, ETHTOOL_MSG_MODULE_EEPROM_SET, false))
+		return -EOPNOTSUPP;
+	if (!ctx->argc) {
+		fprintf(stderr, "ethtool (-M): parameters missing\n");
+		return 1;
+	}
+
+	nlctx->cmd = "-M";
+	nlctx->argp = ctx->argp;
+	nlctx->argc = ctx->argc;
+	nlctx->devname = ctx->devname;
+	nlsk = nlctx->ethnl_socket;
+	msgbuff = &nlsk->msgbuff;
+
+	ret = msg_init(nlctx, msgbuff, ETHTOOL_MSG_MODULE_EEPROM_SET,
+		       NLM_F_REQUEST | NLM_F_ACK);
+	if (ret < 0)
+		return 2;
+	if (ethnla_fill_header(msgbuff, ETHTOOL_A_MODULE_EEPROM_HEADER,
+			       ctx->devname, 0))
+		return -EMSGSIZE;
+
+	ret = nl_parser(nlctx, setmodule_params, NULL, PARSER_GROUP_NONE, NULL);
+	if (ret < 0)
+		return 1;
+
+	if (ethnla_put_u32(msgbuff, ETHTOOL_A_MODULE_EEPROM_LENGTH, 1))
+		return -EMSGSIZE;
+
+	ret = nlsock_sendmsg(nlsk, NULL);
+	if (ret < 0)
+		return 83;
+	ret = nlsock_process_reply(nlsk, nomsg_reply_cb, nlctx);
+	if (ret == 0)
+		return 0;
+	else
+		return nlctx->exit_code ?: 83;
 }

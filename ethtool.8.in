@@ -369,6 +369,14 @@ ethtool \- query or control network driver and hardware settings
 .BN bank
 .BN i2c
 .HP
+.B ethtool \-M|\-\-change\-module\-eeprom
+.I devname
+.BN offset \ N
+.BN page \ N
+.BN bank \ N
+.BN i2c \ N
+.BN value \ N
+.HP
 .B ethtool \-\-show\-priv\-flags
 .I devname
 .HP
@@ -1187,6 +1195,27 @@ allowed. In such a case
 and
 .I length
 parameters are treated relatively to EEPROM page boundaries.
+.TP
+.B \-M \-\-change\-module\-eeprom
+Changes a single byte in the module EEPROM at the specified address to a
+specific value. All the arguments are mandatory to avoid accidental writes.
+.RS 4
+.TP
+.BI offset \ N
+Specifies the offset within a page to write to.
+.TP
+.BI page \ N
+Specifies the page number to write to.
+.TP
+.BI bank \ N
+Specifies the bank number to write to.
+.TP
+.BI i2c \ N
+Specifies the I2C address of the page to write to.
+.TP
+.BI value \ N
+Specifies the value to write.
+.RE
 .TP
 .B \-\-show\-priv\-flags
 Queries the specified network device for its private flags.  The

@@ -71,6 +71,10 @@ static struct {
 		.cmd	= ETHTOOL_MSG_FEC_NTF,
 		.cb	= fec_reply_cb,
 	},
+	{
+		.cmd	= ETHTOOL_MSG_MODULE_EEPROM_NTF,
+		.cb	= module_eeprom_ntf_cb,
+	},
 };
 
 static void clear_filter(struct nl_context *nlctx)

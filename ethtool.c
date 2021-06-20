@@ -5908,6 +5908,16 @@ static const struct option args[] = {
 			  "		[ i2c N ]\n"
 	},
 	{
+		.opts	= "-M|--change-module-eeprom",
+		.nlfunc = nl_setmodule,
+		.help	= "Change byte in device module EEPROM",
+		.xhelp	= "		[ offset N ]\n"
+			  "		[ page N ]\n"
+			  "		[ bank N ]\n"
+			  "		[ i2c N ]\n"
+			  "		[ value N ]\n"
+	},
+	{
 		.opts	= "--show-eee",
 		.func	= do_geee,
 		.nlfunc	= nl_geee,
