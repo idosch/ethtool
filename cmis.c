@@ -43,6 +43,39 @@ static void cmis_show_rev_compliance(const __u8 *id)
 }
 
 /**
+ * Print the current Module State. Relevant documents:
+ * [1] CMIS Rev. 5, pag. 57, section 6.3.2.2, Figure 6-3
+ * [2] CMIS Rev. 5, pag. 60, section 6.3.2.3, Figure 6-4
+ * [3] CMIS Rev. 5, pag. 107, section 8.2.2, Table 8-6
+ */
+static void cmis_show_mod_state(const __u8 *id)
+{
+	__u8 mod_state = (id[CMIS_MODULE_STATE_OFFSET] >> 1) & 0x07;
+
+	printf("\t%-41s : 0x%02x", "Module State", mod_state);
+	switch (mod_state) {
+	case CMIS_MODULE_STATE_MODULE_LOW_PWR:
+		printf(" (ModuleLowPwr)\n");
+		break;
+	case CMIS_MODULE_STATE_MODULE_PWR_UP:
+		printf(" (ModulePwrUp)\n");
+		break;
+	case CMIS_MODULE_STATE_MODULE_READY:
+		printf(" (ModuleReady)\n");
+		break;
+	case CMIS_MODULE_STATE_MODULE_PWR_DN:
+		printf(" (ModulePwrDn)\n");
+		break;
+	case CMIS_MODULE_STATE_MODULE_FAULT:
+		printf(" (ModuleFault)\n");
+		break;
+	default:
+		printf(" (reserved or unknown)\n");
+		break;
+	}
+}
+
+/**
  * Print information about the device's power consumption.
  * Relevant documents:
  * [1] CMIS Rev. 3, pag. 59, section 1.7.3.9, Table 30
@@ -336,6 +369,7 @@ void qsfp_dd_show_all(const __u8 *id)
 	cmis_show_link_len(id);
 	cmis_show_vendor_info(id);
 	cmis_show_rev_compliance(id);
+	cmis_show_mod_state(id);
 }
 
 void cmis_show_all(const struct ethtool_module_eeprom *page_zero,
@@ -356,4 +390,5 @@ void cmis_show_all(const struct ethtool_module_eeprom *page_zero,
 
 	cmis_show_vendor_info(page_zero_data);
 	cmis_show_rev_compliance(page_zero_data);
+	cmis_show_mod_state(page_zero_data);
 }
