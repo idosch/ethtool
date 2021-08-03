@@ -1137,6 +1137,26 @@ _ethtool_test()
 	fi
 }
 
+# Completion for ethtool --set-module
+_ethtool_set_module()
+{
+	local -A settings=(
+		[low-power]=1
+	)
+
+	if [ "${settings[$prev]+set}" ]; then
+		COMPREPLY=( $( compgen -W 'on off' -- "$cur" ) )
+		return
+	fi
+
+	# Remove settings which have been seen
+	local word
+	for word in "${words[@]:3:${#words[@]}-4}"; do
+		unset "settings[$word]"
+	done
+
+	COMPREPLY=( $( compgen -W "${!settings[*]}" -- "$cur" ) )
+}
 
 # Complete any ethtool command
 _ethtool()
@@ -1189,6 +1209,8 @@ _ethtool()
 		[--show-time-stamping]=devname
 		[--statistics]=devname
 		[--test]=test
+		[--set-module]=set_module
+		[--show-module]=devname
 	)
 	local -A other_funcs=(
 		[--config-ntuple]=config_nfc
