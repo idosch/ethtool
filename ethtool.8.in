@@ -475,6 +475,14 @@ ethtool \- query or control network driver and hardware settings
 .HP
 .B ethtool \-\-show\-tunnels
 .I devname
+.HP
+.B ethtool \-\-show\-module
+.I devname
+.HP
+.B ethtool \-\-set\-module
+.I devname
+.RB [ power\-mode\-policy
+.BR low | high | high\-on\-up ]
 .
 .\" Adjust lines (i.e. full justification) and hyphenate.
 .ad
@@ -1457,6 +1465,25 @@ shown. Default is to show notifications for all devices.
 Show tunnel-related device capabilities and state.
 List UDP ports kernel has programmed the device to parse as VxLAN,
 or GENEVE tunnels.
+.RE
+.TP
+.B \-\-show\-module
+Show the transceiver module's parameters.
+.RE
+.TP
+.B \-\-set\-module
+Set the transceiver module's parameters.
+.RS 4
+.TP
+.A3 power-mode-policy low high high-on-up
+Set the power mode policy for the module. When set to \fBlow\fR, the module
+always operates at low power mode. When set to \fBhigh\fR, the module always
+operates at high power mode. When set to \fBhigh-on-up\fR, the module is
+transitioned by the host to high power mode when the first port using it is put
+administratively up and to low power mode when the last port using it is put
+administratively down. The power mode policy can be set before a module is
+plugged-in, but cannot be changed while any ports using the module are
+administratively up.
 .RE
 .SH BUGS
 Not supported (in part or whole) on all network drivers.

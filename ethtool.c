@@ -6021,6 +6021,17 @@ static const struct option args[] = {
 		.help	= "Show NIC tunnel offload information",
 	},
 	{
+		.opts	= "--show-module",
+		.nlfunc	= nl_gmodule,
+		.help	= "Show transceiver module settings",
+	},
+	{
+		.opts	= "--set-module",
+		.nlfunc	= nl_smodule,
+		.help	= "Set transceiver module settings",
+		.xhelp	= "		[ power-mode-policy low|high|high-on-up ]\n"
+	},
+	{
 		.opts	= "-h|--help",
 		.no_dev	= true,
 		.func	= show_usage,
