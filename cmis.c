@@ -76,6 +76,21 @@ static void cmis_show_mod_state(const __u8 *id)
 }
 
 /**
+ * Print the current Module-Level Controls. Relevant documents:
+ * [1] CMIS Rev. 5, pag. 58, section 6.3.2.2, Table 6-12
+ * [2] CMIS Rev. 5, pag. 111, section 8.2.6, Table 8-10
+ */
+static void cmis_show_mod_lvl_controls(const __u8 *id)
+{
+	printf("\t%-41s : ", "LowPwrAllowRequestHW");
+	printf("%s\n", ONOFF(id[CMIS_MODULE_CONTROL_OFFSET] &
+			     CMIS_LOW_PWR_ALLOW_REQUEST_HW));
+	printf("\t%-41s : ", "LowPwrRequestSW");
+	printf("%s\n", ONOFF(id[CMIS_MODULE_CONTROL_OFFSET] &
+			     CMIS_LOW_PWR_REQUEST_SW));
+}
+
+/**
  * Print information about the device's power consumption.
  * Relevant documents:
  * [1] CMIS Rev. 3, pag. 59, section 1.7.3.9, Table 30
@@ -370,6 +385,7 @@ void qsfp_dd_show_all(const __u8 *id)
 	cmis_show_vendor_info(id);
 	cmis_show_rev_compliance(id);
 	cmis_show_mod_state(id);
+	cmis_show_mod_lvl_controls(id);
 }
 
 void cmis_show_all(const struct ethtool_module_eeprom *page_zero,
@@ -391,4 +407,5 @@ void cmis_show_all(const struct ethtool_module_eeprom *page_zero,
 	cmis_show_vendor_info(page_zero_data);
 	cmis_show_rev_compliance(page_zero_data);
 	cmis_show_mod_state(page_zero_data);
+	cmis_show_mod_lvl_controls(page_zero_data);
 }
