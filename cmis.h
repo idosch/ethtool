@@ -28,6 +28,11 @@
 #define CMIS_CURR_TEMP_OFFSET			0x0E
 #define CMIS_CURR_CURR_OFFSET			0x10
 
+/* Module-Level Controls (Page 0) */
+#define CMIS_MODULE_CONTROL_OFFSET		0x1A
+#define CMIS_LOW_PWR_ALLOW_REQUEST_HW		(1 << 6)
+#define CMIS_LOW_PWR_REQUEST_SW			(1 << 4)
+
 #define CMIS_CTOR_OFFSET			0xCB
 
 /* Vendor related information (Page 0) */
