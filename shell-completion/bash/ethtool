@@ -1211,6 +1211,7 @@ _ethtool()
 		[--test]=test
 		[--set-module]=set_module
 		[--show-module]=devname
+		[--reset-module]=devname
 	)
 	local -A other_funcs=(
 		[--config-ntuple]=config_nfc

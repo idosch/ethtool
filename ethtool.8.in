@@ -482,6 +482,9 @@ ethtool \- query or control network driver and hardware settings
 .B ethtool \-\-set\-module
 .I devname
 .B2 low-power on off
+.HP
+.B ethtool \-\-reset\-module
+.I devname
 .
 .\" Adjust lines (i.e. full justification) and hyphenate.
 .ad
@@ -1472,6 +1475,12 @@ Set the transceiver module's parameters.
 .TP
 .A2 low-power on off
 Enable / disable forcing of low power mode by the host.
+.RE
+.TP
+.B \-\-reset\-module
+Reset the transceiver module to its initial state. Reset is performed by either
+asserting the relevant hardware signal or by writing to the module's reset bit
+in its EEPROM.
 .RE
 .SH BUGS
 Not supported (in part or whole) on all network drivers.

@@ -6032,6 +6032,11 @@ static const struct option args[] = {
 		.xhelp	= "		[ low-power on|off ]\n"
 	},
 	{
+		.opts	= "--reset-module",
+		.nlfunc	= nl_reset_module,
+		.help	= "Reset transceiver module",
+	},
+	{
 		.opts	= "-h|--help",
 		.no_dev	= true,
 		.func	= show_usage,
