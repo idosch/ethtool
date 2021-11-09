@@ -399,6 +399,21 @@ static const struct pretty_nla_desc __module_desc[] = {
 	NLATTR_DESC_U8(ETHTOOL_A_MODULE_POWER_MODE),
 };
 
+static const struct pretty_nla_desc __module_fw_info_image_desc[] = {
+	NLATTR_DESC_INVALID(ETHTOOL_A_MODULE_FW_INFO_IMAGE_UNSPEC),
+	NLATTR_DESC_STRING(ETHTOOL_A_MODULE_FW_INFO_IMAGE_NAME),
+	NLATTR_DESC_U8(ETHTOOL_A_MODULE_FW_INFO_IMAGE_RUNNING),
+	NLATTR_DESC_U8(ETHTOOL_A_MODULE_FW_INFO_IMAGE_COMMITTED),
+	NLATTR_DESC_U8(ETHTOOL_A_MODULE_FW_INFO_IMAGE_VALID),
+	NLATTR_DESC_STRING(ETHTOOL_A_MODULE_FW_INFO_IMAGE_VERSION),
+};
+
+static const struct pretty_nla_desc __module_fw_info_desc[] = {
+	NLATTR_DESC_INVALID(ETHTOOL_A_MODULE_FW_INFO_UNSPEC),
+	NLATTR_DESC_NESTED(ETHTOOL_A_MODULE_FW_INFO_HEADER, header),
+	NLATTR_DESC_NESTED(ETHTOOL_A_MODULE_FW_INFO_IMAGE, module_fw_info_image),
+};
+
 const struct pretty_nlmsg_desc ethnl_umsg_desc[] = {
 	NLMSG_DESC_INVALID(ETHTOOL_MSG_USER_NONE),
 	NLMSG_DESC(ETHTOOL_MSG_STRSET_GET, strset),
@@ -436,6 +451,7 @@ const struct pretty_nlmsg_desc ethnl_umsg_desc[] = {
 	NLMSG_DESC(ETHTOOL_MSG_PHC_VCLOCKS_GET, phc_vclocks),
 	NLMSG_DESC(ETHTOOL_MSG_MODULE_GET, module),
 	NLMSG_DESC(ETHTOOL_MSG_MODULE_SET, module),
+	NLMSG_DESC(ETHTOOL_MSG_MODULE_FW_INFO_GET, module_fw_info),
 };
 
 const unsigned int ethnl_umsg_n_desc = ARRAY_SIZE(ethnl_umsg_desc);
@@ -478,6 +494,7 @@ const struct pretty_nlmsg_desc ethnl_kmsg_desc[] = {
 	NLMSG_DESC(ETHTOOL_MSG_PHC_VCLOCKS_GET_REPLY, phc_vclocks),
 	NLMSG_DESC(ETHTOOL_MSG_MODULE_GET_REPLY, module),
 	NLMSG_DESC(ETHTOOL_MSG_MODULE_NTF, module),
+	NLMSG_DESC(ETHTOOL_MSG_MODULE_FW_INFO_GET_REPLY, module_fw_info),
 };
 
 const unsigned int ethnl_kmsg_n_desc = ARRAY_SIZE(ethnl_kmsg_desc);

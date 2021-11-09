@@ -6051,6 +6051,12 @@ static const struct option args[] = {
 		.xhelp	= "		[ power-mode-policy high|auto ]\n"
 	},
 	{
+		.opts	= "--show-module-firmware-info",
+		.json	= true,
+		.nlfunc = nl_gmodule_fw_info,
+		.help	= "Show transceiver module firmware information",
+	},
+	{
 		.opts	= "-h|--help",
 		.no_dev	= true,
 		.func	= show_usage,

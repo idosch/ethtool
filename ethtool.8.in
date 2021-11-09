@@ -485,6 +485,9 @@ ethtool \- query or control network driver and hardware settings
 .I devname
 .RB [ power\-mode\-policy
 .BR high | auto ]
+.HP
+.B ethtool \-\-show\-module\-firmware\-info
+.I devname
 .
 .\" Adjust lines (i.e. full justification) and hyphenate.
 .ad
@@ -1484,6 +1487,10 @@ transitioned by the host to high power mode when the first port using it is put
 administratively up and to low power mode when the last port using it is put
 administratively down. The power mode policy can be set before a module is
 plugged-in.
+.RE
+.TP
+.B \-\-show\-module\-firmware\-info
+Show the transceiver module's firmware information.
 .RE
 .SH BUGS
 Not supported (in part or whole) on all network drivers.
