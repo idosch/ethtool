@@ -177,3 +177,122 @@ int nl_smodule(struct cmd_context *ctx)
 	else
 		return nlctx->exit_code ?: 83;
 }
+
+/* MODULE_FW_INFO_GET */
+
+static int parse_image(const struct nlattr *image)
+{
+	const struct nlattr *tb[ETHTOOL_A_MODULE_FW_INFO_IMAGE_MAX + 1] = {};
+	const struct nlattr *attr;
+	DECLARE_ATTR_TB_INFO(tb);
+	int ret;
+
+	ret = mnl_attr_parse_nested(image, attr_cb, &tb_info);
+	if (ret < 0)
+		return 1;
+
+	open_json_object("image");
+
+	print_string(PRINT_FP, NULL, "%s:\n", "image");
+
+	mnl_attr_for_each_nested(attr, image) {
+		switch (mnl_attr_get_type(attr)) {
+		case ETHTOOL_A_MODULE_FW_INFO_IMAGE_NAME:
+			print_string(PRINT_ANY, "name", "  name: %s\n",
+				     mnl_attr_get_str(attr));
+			break;
+		case ETHTOOL_A_MODULE_FW_INFO_IMAGE_RUNNING:
+			print_bool(PRINT_ANY, "running", "  running: %s\n",
+				   mnl_attr_get_u8(attr));
+			break;
+		case ETHTOOL_A_MODULE_FW_INFO_IMAGE_COMMITTED:
+			print_bool(PRINT_ANY, "committed", "  committed: %s\n",
+				   mnl_attr_get_u8(attr));
+			break;
+		case ETHTOOL_A_MODULE_FW_INFO_IMAGE_VALID:
+			print_bool(PRINT_ANY, "valid", "  valid: %s\n",
+				   mnl_attr_get_u8(attr));
+			break;
+		case ETHTOOL_A_MODULE_FW_INFO_IMAGE_VERSION:
+			print_string(PRINT_ANY, "version", "  version: %s\n",
+				     mnl_attr_get_str(attr));
+			break;
+		default:
+			continue;
+		}
+	}
+
+	close_json_object();
+
+	return 0;
+}
+
+int module_fw_info_reply_cb(const struct nlmsghdr *nlhdr, void *data)
+{
+	const struct nlattr *tb[ETHTOOL_A_MODULE_FW_INFO_MAX + 1] = {};
+	struct nl_context *nlctx = data;
+	const struct nlattr *attr;
+	DECLARE_ATTR_TB_INFO(tb);
+	bool silent;
+	int err_ret;
+	int ret;
+
+	silent = nlctx->is_dump || nlctx->is_monitor;
+	err_ret = silent ? MNL_CB_OK : MNL_CB_ERROR;
+	ret = mnl_attr_parse(nlhdr, GENL_HDRLEN, attr_cb, &tb_info);
+	if (ret < 0)
+		return err_ret;
+	nlctx->devname = get_dev_name(tb[ETHTOOL_A_MODULE_FW_INFO_HEADER]);
+	if (!dev_ok(nlctx))
+		return err_ret;
+
+	if (silent)
+		print_nl();
+
+	open_json_object(NULL);
+
+	print_string(PRINT_ANY, "ifname", "Module firmware info for %s:\n",
+		     nlctx->devname);
+
+	mnl_attr_for_each(attr, nlhdr, GENL_HDRLEN) {
+		if (mnl_attr_get_type(attr) == ETHTOOL_A_MODULE_FW_INFO_IMAGE) {
+			ret = parse_image(attr);
+			if (ret)
+				goto err_close_dev;
+		}
+	}
+
+	close_json_object();
+
+	return MNL_CB_OK;
+
+err_close_dev:
+	close_json_object();
+	return err_ret;
+}
+
+int nl_gmodule_fw_info(struct cmd_context *ctx)
+{
+	struct nl_context *nlctx = ctx->nlctx;
+	struct nl_socket *nlsk;
+	int ret;
+
+	if (netlink_cmd_check(ctx, ETHTOOL_MSG_MODULE_FW_INFO_GET, true))
+		return -EOPNOTSUPP;
+	if (ctx->argc > 0) {
+		fprintf(stderr, "ethtool: unexpected parameter '%s'\n",
+			*ctx->argp);
+		return 1;
+	}
+
+	nlsk = nlctx->ethnl_socket;
+	ret = nlsock_prep_get_request(nlsk, ETHTOOL_MSG_MODULE_FW_INFO_GET,
+				      ETHTOOL_A_MODULE_FW_INFO_HEADER, 0);
+	if (ret < 0)
+		return ret;
+
+	new_json_obj(ctx->json);
+	ret = nlsock_send_get_request(nlsk, module_fw_info_reply_cb);
+	delete_json_obj();
+	return ret;
+}
