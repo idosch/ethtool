@@ -75,6 +75,10 @@ static struct {
 		.cmd	= ETHTOOL_MSG_MODULE_NTF,
 		.cb	= module_reply_cb,
 	},
+	{
+		.cmd	= ETHTOOL_MSG_MODULE_FW_FLASH_NTF,
+		.cb	= module_fw_flash_ntf_cb,
+	},
 };
 
 static void clear_filter(struct nl_context *nlctx)

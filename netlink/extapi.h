@@ -48,6 +48,7 @@ int nl_smodule(struct cmd_context *ctx);
 int nl_monitor(struct cmd_context *ctx);
 int nl_getmodule(struct cmd_context *ctx);
 int nl_gmodule_fw_info(struct cmd_context *ctx);
+int nl_flash_module_fw(struct cmd_context *ctx);
 
 void nl_monitor_usage(void);
 
@@ -116,6 +117,7 @@ nl_get_eeprom_page(struct cmd_context *ctx __maybe_unused,
 #define nl_gmodule		NULL
 #define nl_smodule		NULL
 #define nl_gmodule_fw_info	NULL
+#define nl_flash_module_fw	NULL
 
 #endif /* ETHTOOL_ENABLE_NETLINK */
 

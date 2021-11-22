@@ -6057,6 +6057,14 @@ static const struct option args[] = {
 		.help	= "Show transceiver module firmware information",
 	},
 	{
+		.opts	= "--flash-module-firmware",
+		.nlfunc	= nl_flash_module_fw,
+		.help	= "Flash transceiver module firmware",
+		.xhelp	= "		[ file FILE ]\n"
+			  "		[ pass PASS ]\n"
+			  "		[ commit on|off ]\n"
+	},
+	{
 		.opts	= "-h|--help",
 		.no_dev	= true,
 		.func	= show_usage,

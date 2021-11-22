@@ -488,6 +488,14 @@ ethtool \- query or control network driver and hardware settings
 .HP
 .B ethtool \-\-show\-module\-firmware\-info
 .I devname
+.HP
+.B ethtool \-\-flash\-module\-firmware
+.I devname
+.RB [ file
+.IR FILE ]
+.RB [ pass
+.IR PASS ]
+.B2 commit on off
 .
 .\" Adjust lines (i.e. full justification) and hyphenate.
 .ad
@@ -1491,6 +1499,34 @@ plugged-in.
 .TP
 .B \-\-show\-module\-firmware\-info
 Show the transceiver module's firmware information.
+.RE
+.TP
+.B \-\-flash\-module\-firmware
+Flash the transceiver module's firmware.
+.RS 4
+.TP
+.BI file \ FILE
+Specifies the filename of the transceiver module firmware image. The firmware
+must first be installed in one of the directories where the kernel firmware
+loader or firmware agent will look, such as /lib/firmware.
+.RE
+.RS 4
+.TP
+.BI pass \ PASS
+Optional transceiver module password that might be required as part of the
+transceiver module firmware update process.
+.RE
+.RS 4
+.TP
+.A2 commit on off
+Determines whether the running firmware image is committed. That is, if the
+image is to be run upon reset. When not specified or set to \fBoff\fR,
+\fIfile\fR is mandatory. The specified firmware image is downloaded to the
+transceiver module and run, but not committed. When set to \fBon\fR, if
+\fIfile\fR is also specified, the firmware image is downloaded to the
+transceiver module, run and committed. If \fIfile\fR is not specified, the
+currently running firmware image is committed. It is recommended to test a new
+firmware image before committing it.
 .RE
 .SH BUGS
 Not supported (in part or whole) on all network drivers.
