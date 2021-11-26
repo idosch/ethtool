@@ -41,6 +41,10 @@
 #define CMIS_LOW_PWR_ALLOW_REQUEST_HW_MASK	0x40
 #define CMIS_LOW_PWR_REQUEST_SW_MASK		0x10
 
+/* Module Active Firmware Version (Page 0) */
+#define CMIS_MODULE_ACTIVE_FW_MAJOR_OFFSET	0x27
+#define CMIS_MODULE_ACTIVE_FW_MINOR_OFFSET	0x28
+
 /* Module Fault Information (Page 0) */
 #define CMIS_MODULE_FAULT_OFFSET		0x29
 #define CMIS_MODULE_FAULT_NO_FAULT		0x00
@@ -133,6 +137,10 @@
  * that are unique to active modules and cable assemblies.
  * GlobalOffset = 2 * 0x80 + LocalOffset
  */
+
+/* Module Inactive Firmware Version (Page 1) */
+#define CMIS_MODULE_INACTIVE_FW_MAJOR_OFFSET	0x80
+#define CMIS_MODULE_INACTIVE_FW_MINOR_OFFSET	0x81
 
 /* Supported Link Length (Page 1) */
 #define CMIS_SMF_LEN_OFFSET			0x84
