@@ -846,6 +846,50 @@ static void cmis_show_dom(const struct cmis_memory_map *map)
 		sff_show_thresholds(sd);
 }
 
+/* Print active and inactive firmware versions. Relevant documents:
+ * [1] CMIS Rev. 5, page 115, section 8.2.9, Table 8-14
+ * [2] CMIS Rev. 5, page 127, section 8.4.1, Table 8-37
+ */
+static void cmis_show_fw_version_common(const char *name, __u8 major,
+					__u8 minor)
+{
+	if (major == 0 && minor == 0) {
+		return;
+	} else if (major == 0xFF && minor == 0xFF) {
+		printf("\t%-41s : Invalid\n", name);
+		return;
+	}
+
+	printf("\t%-41s : %d.%d\n", name, major, minor);
+}
+
+static void cmis_show_fw_active_version(const struct cmis_memory_map *map)
+{
+	__u8 major = map->lower_memory[CMIS_MODULE_ACTIVE_FW_MAJOR_OFFSET];
+	__u8 minor = map->lower_memory[CMIS_MODULE_ACTIVE_FW_MINOR_OFFSET];
+
+	cmis_show_fw_version_common("Active firmware version", major, minor);
+}
+
+static void cmis_show_fw_inactive_version(const struct cmis_memory_map *map)
+{
+	__u8 major;
+	__u8 minor;
+
+	if (!map->page_01h)
+		return;
+
+	major = map->page_01h[CMIS_MODULE_INACTIVE_FW_MAJOR_OFFSET];
+	minor = map->page_01h[CMIS_MODULE_INACTIVE_FW_MINOR_OFFSET];
+	cmis_show_fw_version_common("Inactive firmware version", major, minor);
+}
+
+static void cmis_show_fw_version(const struct cmis_memory_map *map)
+{
+	cmis_show_fw_active_version(map);
+	cmis_show_fw_inactive_version(map);
+}
+
 static void cmis_show_all_common(const struct cmis_memory_map *map)
 {
 	cmis_show_identifier(map);
@@ -861,6 +905,7 @@ static void cmis_show_all_common(const struct cmis_memory_map *map)
 	cmis_show_mod_fault_cause(map);
 	cmis_show_mod_lvl_controls(map);
 	cmis_show_dom(map);
+	cmis_show_fw_version(map);
 }
 
 static void cmis_memory_map_init_buf(struct cmis_memory_map *map,
